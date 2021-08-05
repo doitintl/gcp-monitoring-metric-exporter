@@ -206,3 +206,15 @@ Please type "N" in order to prevent any unauthenticated invocation.
 In case that you already have a Cloud Function, and you want to deploy on new export, please run the following command to deploy new cloud scheduler:
 
 ```make schedule_metric_export```
+
+## Clean
+
+To delete the Cloud Function please run:
+
+``` make delete_cloud_function ```
+
+To specific export please run:
+
+``` delete_scheduler ```
+
+Any comments or suggestions are welcome.
