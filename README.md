@@ -51,33 +51,33 @@ For more information please look at [gcloud auth login documentation](https://cl
 
 In order to deploy the pipeline there are configuration parameters on the Makefile that needs to be configured:
 
-- PROJECT_ID - GCP project id.
+- ```PROJECT_ID``` - GCP project id.
 
-- CF_REGION - GCP region for deploying the Cloud Function.
+- ```CF_REGION``` - GCP region for deploying the Cloud Function.
 
-- TIMEOUT - Cloud Function timeout (MAX=540).
+- ```TIMEOUT``` - Cloud Function timeout (MAX=540).
 
-- MEMORY - Cloud Function memory in MB (MAX=8192MB).
+- ```MEMORY``` - Cloud Function memory in MB (MAX=8192MB).
 
-- EXPORT_NAME - Keep this name unique for each metric export, this is the scheduler name as well as the table name in BigQuery.
+- ```EXPORT_NAME``` - Keep this name unique for each metric export, this is the scheduler name as well as the table name in BigQuery.
 
-- TIME_ZONE - Time zone of the Cloud Scheduler.
+- ```TIME_ZONE``` - Time zone of the Cloud Scheduler.
 
-- SCHEDULE - [Cron expression](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules) for triggering the export (Cloud Scheduler).
+- ```SCHEDULE``` - [Cron expression](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules) for triggering the export (Cloud Scheduler).
 
-- WEEKS - The number of weeks back to get the metric data for each runtime.
+- ```WEEKS``` - The number of weeks back to get the metric data for each runtime.
 
-- DAYS - The number of days back to get the metric data for each runtime.
+- ```DAYS``` - The number of days back to get the metric data for each runtime.
 
-- HOURS - The number of hours back to get the metric data for each runtime.
+- ```HOURS``` - The number of hours back to get the metric data for each runtime.
 
-- FILTER - The cloud monitoring [filter expression](https://cloud.google.com/monitoring/api/v3/filters), keep the pattern of single quote (') on the outer part of the filter and double quote (") inside the filter. Example: ```FILTER='metric.type = "storage.googleapis.com/storage/object_count"'```
+- ```FILTER``` - The cloud monitoring [filter expression](https://cloud.google.com/monitoring/api/v3/filters), keep the pattern of single quote (') on the outer part of the filter and double quote (") inside the filter. Example: ```FILTER='metric.type = "storage.googleapis.com/storage/object_count"'```
 
-- BQ_DATASET - BigQuery dataset name, Configure only at the first deployment.
+- ```BQ_DATASET``` - BigQuery dataset name, Configure only at the first deployment.
 
-- BQ_LOCATION - BigQuery dataset location, Configure only at the first deployment.
+- ```BQ_LOCATION``` - BigQuery dataset location, Configure only at the first deployment.
 
-- PAGE_SIZE - The pagination size for splitting the API response by the number of data points.
+- ```PAGE_SIZE``` - The pagination size for splitting the API response by the number of data points.
 
 
 ### Create BigQuery Dataset:
