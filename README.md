@@ -21,6 +21,8 @@ The GCP Metric Exporter project created to address the following points:
 
 3) Cloud Storage - The cloud function will make the API call and split the response into different files (using the parameter PAGE_SIZE), and will store it on GCS for the load job into BQ.  
 
+
+
 4) BigQuery - Store the exported metrics data for future analysis (One table for each metric).
 
 
