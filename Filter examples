@@ -1,0 +1,26 @@
+Dataflow system lag metric:
+
+'metric.type = "dataflow.googleapis.com/job/system_lag" AND \
+resource.type="dataflow_job" AND resource.labels.project_id=<Project-ID> AND \
+resource.labels.job_name = starts_with("<JOB_PREFIX>")'
+
+
+Dataflow vCPU in use:
+
+'metric.type = "dataflow.googleapis.com/job/current_num_vcpus" AND \
+resource.type="dataflow_job" AND resource.labels.project_id=<Project-ID> AND \
+resource.labels.job_name = starts_with("<JOB_PREFIX>")'
+
+
+Dataflow workers cpu MEAN usage (please use with the parameters --mean_series_aligner=True and --alignment_period)
+
+'metric.type = "compute.googleapis.com/instance/cpu/utilization" AND \
+resource.type="gce_instance" AND resource.labels.project_id=<Project-ID> AND \
+metric.labels.instance_name = starts_with("<JOB_PREFIX>")'
+
+
+PubSub Topic incoming messages:
+
+'metric.type = "pubsub.googleapis.com/topic/send_message_operation_count" AND \
+resource.type="pubsub_topic" AND resource.labels.project_id = "<Project-ID>" AND \
+resource.labels.topic_id = "<TOPIC-ID>"' \
