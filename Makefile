@@ -1,40 +1,55 @@
-# General Parameters #
-PROJECT_ID=<PROJECT-ID>
+# Parameters to configure #
+PROJECT_ID="<PROJECT-ID>"
 
 # Cloud Function Parameters #
-CF_NAME="metric_exporter" # Don't change
-CF_REGION="us-central1"
-CF_SA="metric-exporter-cf-sa@"$(PROJECT_ID)".iam.gserviceaccount.com" # Don't change
-RUNTIME="python37"
-SOURCE_PATH="./cloud_function" # Don't change | Source file path for the cloud function
-ENTRY_POINT="export" # Don't change
-TIMEOUT=540 # In seconds max=540
-MEMORY=128 # In MB max=8192MB
+CF_REGION="<CLOUD-FUNCTION-REGION>"
+TIMEOUT=540 # INT - In seconds max=540
+MEMORY=128 # INT - In MB max=8192MB
+PAGE_SIZE=500 # INT
 
 # Cloud Scheduler Parameters #
-EXPORT_NAME="staging2" # Keep this name unique for each metric export, this is the scheduler name as well as the table name in BigQuery
-TIME_ZONE="UTC"
-SCHEDULE="* * * * *" # Change by your requirements - the cron expression to trigger the export.
-WEEKS=0
-DAYS=0
-HOURS=1
+EXPORT_NAME="<EXPORT-JOB-NAME>" # Keep this name unique for each metric export, this is the scheduler name as well as the table name in BigQuery
+TIME_ZONE="<SCHEDULER-TIME-ZONE>"
+SCHEDULE="<CRON-EXPRESSION>" # The export job will be triggered by this expression, for more information please look at https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules.
+WEEKS=0 # INT
+DAYS=0 # INT
+HOURS=1 # INT
 FILTER='metric.type = "storage.googleapis.com/storage/object_count"' # Change to your metric filter
-SCHEDULER_SA="metric-exporter-scheduler-sa@"$(PROJECT_ID)".iam.gserviceaccount.com" # Don't change Cloud | function invoker
-HEADERS="Content-Type=application/json,User-Agent=Google-Cloud-Scheduler" # Don't change
+
+# BigQuery Parameters - Configure only at First deployment #
+BQ_DATASET="metric_exporter_staging_dataset" #
+BQ_LOCATION="US"
+
+
+# -------------------------------------------------------------------------------------------------------------------- #
+
+# System parameters - Don't change #
+
+# Cloud Function Parameters #
+
+CF_NAME="metric_exporter"
+CF_SA="metric-exporter-cf-sa@"$(PROJECT_ID)".iam.gserviceaccount.com"
+RUNTIME="python37"
+SOURCE_PATH="./cloud_function" # Source file path for the cloud function
+ENTRY_POINT="export"
+
+# Cloud Scheduler Parameters #
+
+SCHEDULER_SA="metric-exporter-scheduler-sa@"$(PROJECT_ID)".iam.gserviceaccount.com" # Cloud Function Invoker
+HEADERS="Content-Type=application/json,User-Agent=Google-Cloud-Scheduler"
 
 # BigQuery Parameters #
-BQ_DATASET="metric_exporter_staging_dataset" # Configure only at the first deployment
 BQ_TABLE=$(EXPORT_NAME)
-BQ_LOCATION="US" #Configure only at the first deployment
 
 # GCS Bucket Parameters#
-BUCKET_NAME=<GCS-BUCKET-NAME>
-PAGE_SIZE=250
+BUCKET_NAME="$(PROJECT_ID)-Metric-Exporter"
 
 # System Parameters - Don't change #
+
 MSG_TMP_DIR="./msg_tmp"
 MSG_BODY_FILE_NAME="msg.json"
 
+# -------------------------------------------------------------------------------------------------------------------- #
 
 deploy_cloud_function:
 	gcloud functions deploy $(CF_NAME) --region=$(CF_REGION) --runtime=$(RUNTIME) --trigger-http --source=$(SOURCE_PATH) \
@@ -77,3 +92,6 @@ get_scheduler_sa_name:
 schedule_metric_export: deploy_scheduler clean
 
 full_deploy: deploy_cloud_function schedule_metric_export
+
+print_dummy:
+	echo $(my_name)

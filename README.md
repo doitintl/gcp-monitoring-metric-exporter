@@ -19,16 +19,33 @@ The GCP Metric Exporter project created to address the following points:
 
 2) Cloud Function - This function is responsible for executing the export step using the information provided by the cloud scheduler and triggered by HTTP endpoint, and loading the data into the BigQuery.
 
-3) Cloud Storage - The cloud function will make the API call and split the response into different files (using the parameter PAGE_SIZE), and will store it on GCS for the load job into BQ.  
-
-
+3) Cloud Storage - The cloud function will make the API call and split the response into different files (using the parameter PAGE_SIZE), and will store it on GCS for the load job into BQ.
 
 4) BigQuery - Store the exported metrics data for future analysis (One table for each metric).
 
 
 ![alt text](images/Metric_Exporter_Architecture.png)
 
+## Prerequisite
+
+In order to run this project we'll need to have:
+
+* [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
+* [gsutil](https://cloud.google.com/storage/docs/gsutil_install)
+* ```Python >= 3.6```
+
+Please run the following command to install local Python dependencies:
+
+```pip install -r ./local-requirements.txt ```
+
 ## Installation
+
+### Authentication
+Please authenticate with your user using the gcloud SDK by running the following command:
+
+```gcloud auth login```
+
+For more information please look at [gcloud auth login documentation](https://cloud.google.com/sdk/gcloud/reference/auth/login).
 
 ### Configure the Makefile parameters
 
@@ -63,24 +80,23 @@ In order to deploy the pipeline there are configuration parameters on the Makefi
 - PAGE_SIZE - The pagination size for splitting the API response by the number of data points.
 
 
-- BUCKET_NAME - The GCS bucket name which hold parsed data points that will be load into BQ.
-
-### Authentication
-Please authenticate with your user using the gcloud SDK, for more information please look at [gcloud auth login](https://cloud.google.com/sdk/gcloud/reference/auth/login).
-
 ### Create BigQuery Dataset:
 
 In order to create the BigQuery dataset run the following command:
 
 ```make create_bq_dataset```
 
+### Create GCS Bucket
+
+```gsutil mb gs://${PROJECT_ID}-Metric-Exporter```
+
 ### Exporting environment variable
 
-Please run the following command to export you project id:
+Please run the following to export required variables:
 
 ```
 export PROJECT_ID=<YOUR-PORJECT-ID>
-export BUCKET_NAME=<GCS-BUCKET_NAME>
+export BUCKET_NAME="${PROJECT_ID}-Metric-Exporter"
 ```
 
 ### Cloud Function service account
