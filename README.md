@@ -63,7 +63,6 @@ In order to deploy the pipeline there are configuration parameters on the Makefi
 - PAGE_SIZE - The pagination size for splitting the API response by the number of data points.
 
 
-
 - BUCKET_NAME - The GCS bucket name which hold parsed data points that will be load into BQ.
 
 ### Authentication
