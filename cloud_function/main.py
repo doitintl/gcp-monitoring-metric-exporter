@@ -1,3 +1,4 @@
+import logging
 from google.cloud import monitoring_v3
 from google.cloud import bigquery
 from datetime import timedelta
@@ -9,6 +10,9 @@ from google.cloud.storage import Blob
 from google.cloud import storage
 
 monitoring_client = monitoring_v3.MetricServiceClient()
+bq_client = bigquery.Client()
+storage_client = storage.Client()
+
 export_datetime = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -48,11 +52,11 @@ def get_request_body(project_id, metric_filter, interval, page_size, full_view=T
 
 
 def get_metric_data(request):
-    print("Sending request to the server...")
+    logging.debug("Sending API request to the monitoring backend")
 
     results = monitoring_client.list_time_series(request)
 
-    print("Got response from the server")
+    logging.debug("Got response from the server")
 
     return results
 
@@ -62,8 +66,7 @@ def get_second_delta(weeks, days, hours, seconds):
 
 
 def parse_as_json_new_line(data):
-    print("Parsing response into data points")
-
+    logging.debug("Parsing data into data points")
     points = []
     for page in data:
 
@@ -90,13 +93,13 @@ def parse_as_json_new_line(data):
 
             points.append(dict_point)
 
+    logging.debug("Parsing completed")
+
     return points
 
 
 def load_to_bq(project_id, dataset, table_name, gcs_path):
-    client = bigquery.Client()
-
-    print(f"BigQuery load destination: {project_id}:{dataset}.{table_name}")
+    logging.info(f"BigQuery load destination: {project_id}:{dataset}.{table_name}")
 
     table_id = f"{project_id}.{dataset}.{table_name}"
 
@@ -104,12 +107,12 @@ def load_to_bq(project_id, dataset, table_name, gcs_path):
         source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON, autodetect=True,
     )
 
-    job = client.load_table_from_uri(f'{gcs_path}', table_id, job_config=job_config)
+    job = bq_client.load_table_from_uri(f'{gcs_path}', table_id, job_config=job_config)
 
     job.result()  # Waits for the job to complete.
 
-    table = client.get_table(table_id)  # Make an API request.
-    print(
+    table = bq_client.get_table(table_id)  # Make an API request.
+    logging.info(
         "Load job completed, total rows number is {} and with {} columns on {}".format(
             table.num_rows, len(table.schema), table_id
         )
@@ -118,76 +121,93 @@ def load_to_bq(project_id, dataset, table_name, gcs_path):
 
 def write_to_local_disk(file_prefix, page_number, page_data):
     page_local_path = f'/tmp/{file_prefix}_{page_number}.jsonl'
+    logging.debug(f"Writing data point into local path {page_local_path}")
     with open(page_local_path, 'w') as out_file:
         for data_point in page_data:
             out_file.write(json.dumps(data_point))
             out_file.write("\n")
 
-    print("Writing operation completed with no errors")
+    logging.debug(f"Writing tmp file {page_local_path} completed with no errors")
 
     return page_local_path
 
 
 def delete_local_file(path):
+    logging.debug(f'Removing tmp local file {path}')
     os.remove(path)
+    logging.debug(f'Local file {path} successfully removed')
 
 
-def write_to_gcs(project_id, bucket_name, file_prefix, page_number, page_data):
+def write_to_gcs(bucket_name, file_prefix, page_number, page_data):
     local_page_path = write_to_local_disk(file_prefix, page_number, page_data)
-
-    storage_client = storage.Client(project=project_id)
     bucket_path = storage_client.get_bucket(bucket_name)
-    blob = Blob(f'{file_prefix}/{export_datetime}/{page_number}.jsonl', bucket_path)
+    gcs_file_path = f'{file_prefix}/{export_datetime}/{page_number}.jsonl'
+
+    logging.debug(f'Uploading local file {local_page_path} to gcs path {gcs_file_path}')
+
+    blob = Blob(gcs_file_path, bucket_path)
     blob.upload_from_filename(local_page_path)
+
+    logging.debug(f'Uploading {local_page_path} to gcs path {gcs_file_path} successfully done')
 
     delete_local_file(local_page_path)
 
 
+def get_parsed_request(request):
+    logging.debug(f'Request content:{request}')
+    logging.debug(f"Metric filter: {request['filter']}")
+
+    int_key_names = ['weeks',
+                     'days',
+                     'hours',
+                     'page_size']
+
+    parsed_request = request.get_json()
+
+    for name in int_key_names:
+        parsed_request[name] = int(parsed_request[name])
+
+    return parsed_request
+
+
 def export(request):
-    request_json = request.get_json()
+    parsed_request = get_parsed_request(request)
 
-    print(f'Request content:{request_json}')
+    interval = get_interval(parsed_request['weeks'],
+                            parsed_request['days'],
+                            parsed_request['hours'])
 
-    env_project = request_json['project_id']
+    api_request = get_request_body(parsed_request['project_id'],
+                                   parsed_request['filter'],
+                                   interval,
+                                   parsed_request['page_size'])
 
-    env_bucket = request_json['bucket_name']
-
-    env_filter = request_json['filter']
-
-    env_weeks = int(request_json['weeks'])
-
-    env_days = int(request_json['days'])
-
-    env_hours = int(request_json['hours'])
-
-    page_size = int(request_json['page_size'])
-
-    env_bq_destination_dataset = request_json['bq_destination_dataset']
-
-    env_bq_destination_table = request_json['bq_destination_table']
-
-    print(f"Metric filter: {env_filter}")
-
-    interval = get_interval(env_weeks, env_days, env_hours)
-
-    request = get_request_body(env_project, env_filter, interval, page_size)
-
-    raw_metrics_data = get_metric_data(request)
+    raw_metrics_data = get_metric_data(api_request)
 
     page_num = 1
     parsed_page = parse_as_json_new_line(raw_metrics_data.time_series)
-    write_to_gcs(env_project, env_bucket, env_bq_destination_table, page_num, parsed_page)
+    write_to_gcs(parsed_request['bucket_name'],
+                 parsed_request['bq_destination_table'],
+                 page_num,
+                 parsed_page)
 
     while raw_metrics_data.next_page_token:
-        request.update({
+        api_request.update({
             'page_token': raw_metrics_data.next_page_token
         })
-        raw_metrics_data = get_metric_data(request)
+        raw_metrics_data = get_metric_data(api_request)
 
         page_num += 1
 
         parsed_page = parse_as_json_new_line(raw_metrics_data.time_series)
-        write_to_gcs(env_project, env_bucket, env_bq_destination_table, page_num, parsed_page)
+        write_to_gcs(parsed_request['bucket_name'],
+                     parsed_request['bq_destination_table'],
+                     page_num,
+                     parsed_page)
 
-    gcs_path = f'gs://{env_bucket}/{env_bq_destination_table}/{export_datetime}/*'
-    load_to_bq(env_project, env_bq_destination_dataset, env_bq_destination_table, gcs_path)
+    gcs_path = f"gs://{parsed_request['bucket_name']}/{parsed_request['bq_destination_table']}/{export_datetime}/*"
+    
+    load_to_bq(parsed_request['project_id'],
+               parsed_request['bq_destination_dataset'],
+               parsed_request['bq_destination_table'],
+               gcs_path)
