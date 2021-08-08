@@ -8,8 +8,8 @@ MEMORY=128 # INT - In MB max=8192MB
 PAGE_SIZE=500 # INT
 
 # Cloud Scheduler Parameters #
-EXPORT_NAME="<EXPORT-JOB-NAME>" # Keep this name unique for each metric export, this is the scheduler name as well as the table name in BigQuery
-TIME_ZONE="<SCHEDULER-TIME-ZONE>"
+EXPORT_NAME="<EXPORT-NAME>" # Keep this name unique for each metric export, this is the scheduler name as well as the table name in BigQuery
+TIME_ZONE="UTC"
 SCHEDULE="<CRON-EXPRESSION>" # The export job will be triggered by this expression, for more information please look at https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules.
 WEEKS=0 # INT
 DAYS=0 # INT
@@ -17,7 +17,7 @@ HOURS=1 # INT
 FILTER='metric.type = "storage.googleapis.com/storage/object_count"' # Change to your metric filter
 
 # BigQuery Parameters - Configure only at First deployment #
-BQ_DATASET="metric_exporter_staging_dataset" #
+BQ_DATASET="<BQ-DATASET-NAME>" #
 BQ_LOCATION="US"
 
 
@@ -42,7 +42,7 @@ HEADERS="Content-Type=application/json,User-Agent=Google-Cloud-Scheduler"
 BQ_TABLE=$(EXPORT_NAME)
 
 # GCS Bucket Parameters#
-BUCKET_NAME="$(PROJECT_ID)-Metric-Exporter"
+BUCKET_NAME="$(PROJECT_ID)-metric-exporter"
 
 # System Parameters - Don't change #
 
@@ -58,7 +58,7 @@ deploy_cloud_function:
 
 deploy_scheduler: test_filter_api build_json_msg
 	gcloud scheduler jobs create http $(EXPORT_NAME) --project=$(PROJECT_ID) --schedule=$(SCHEDULE) \
-	--uri=$https://$(CF_REGION)-$(PROJECT_ID).cloudfunctions.net/$(CF_NAME) --http-method=POST \
+	--uri=https://$(CF_REGION)-$(PROJECT_ID).cloudfunctions.net/$(CF_NAME) --http-method=POST \
 	--headers=$(HEADERS) \
 	--oidc-service-account-email=$(SCHEDULER_SA) \
 	--message-body-from-file=$(MSG_TMP_DIR)"/"$(MSG_BODY_FILE_NAME) \
@@ -92,6 +92,3 @@ get_scheduler_sa_name:
 schedule_metric_export: deploy_scheduler clean
 
 full_deploy: deploy_cloud_function schedule_metric_export
-
-print_dummy:
-	echo $(my_name)

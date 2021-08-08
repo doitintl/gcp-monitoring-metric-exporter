@@ -155,7 +155,6 @@ def write_to_gcs(bucket_name, file_prefix, page_number, page_data):
 
 def get_parsed_request(request):
     logging.debug(f'Request content:{request}')
-    logging.debug(f"Metric filter: {request['filter']}")
 
     int_key_names = ['weeks',
                      'days',
