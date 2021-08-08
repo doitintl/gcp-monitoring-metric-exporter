@@ -84,11 +84,9 @@ In order to deploy the pipeline there are configuration parameters on the Makefi
 
 In order to create the BigQuery dataset run the following command:
 
-```make create_bq_dataset```
-
-### Create GCS Bucket
-
-```gsutil mb gs://${PROJECT_ID}-Metric-Exporter```
+```
+make create_bq_dataset
+```
 
 ### Exporting environment variable
 
@@ -96,7 +94,12 @@ Please run the following to export required variables:
 
 ```
 export PROJECT_ID=<YOUR-PORJECT-ID>
-export BUCKET_NAME="${PROJECT_ID}-Metric-Exporter"
+export BUCKET_NAME="${PROJECT_ID}-metric-exporter"
+```
+### Create GCS Bucket
+
+```
+gsutil mb gs://${BUCKET_NAME}
 ```
 
 ### Cloud Function service account
